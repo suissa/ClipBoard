@@ -10,7 +10,6 @@ const needle = require('needle');
 const emptyDir = require('empty-dir');
 const log4node = require('log4node');
 const log = new log4node.Log4Node({level: 'info', file: 'clipboard.log'});
-const favicon = require('serve-favicon');
 const express = require('express');
 const app = express();
  
@@ -38,9 +37,6 @@ const upload = multer({
     limits: limits
 });
 
-const routes = require('./routes/index');
-const users = require('./routes/users');
-
 log.info(app.get('env'));
 app.disable('x-powered-by');
 app.use(favicon(__dirname + '/public/favicon/favicon.ico'));
@@ -51,27 +47,15 @@ app.set('view engine', 'jade');
 app.engine('html', require('jade').renderFile);
 //app.set("view options", {layout: false});
 
-
-app.get('/', (req, res, next) => {
-    res.render('index.jade');
-});
-
-app.get('/500', (req, res, next) => {
-    res.render('500.jade');
-});
-
-app.get('/about', (req, res, next) => {
-    res.render('about.jade');
-});
-
-app.get('/404', (req, res, next) => {
-    res.render('404.jade');
-});
-
-app.get('/tos', (req, res, next) => {
-    res.render('tos.jade');
-});
-
+app
+    .get('/', (req, res, next) => res.render('index.jade'));
+    .get('/500', (req, res, next) => res.render('500.jade'));
+    .get('/about', (req, res, next) => res.render('about.jade'));
+    .get('/404', (req, res, next) => res.render('404.jade'));
+    .get('/tos', (req, res, next) => res.render('tos.jade'));
+    .get('/download/:folder/:filename', downloadFolderFilename);
+    .post('/', upload.single('file'), uploadSingleFile);
+//de onde vem esse upload.single ??
 
 const uploadSingleFile = (req, res, next) => {
     const path = req.file.path;
@@ -101,8 +85,6 @@ const uploadSingleFile = (req, res, next) => {
         });
     });
   }
-//de onde vem esse upload.single ??
-app.post('/', upload.single('file'), uploadSingleFile);
 
 const downloadFolderFilename = (req, res, next) => {
     const filename = req.params.filename;
@@ -119,7 +101,6 @@ const downloadFolderFilename = (req, res, next) => {
         }
     });
   }
-app.get('/download/:folder/:filename', downloadFolderFilename);
 
 const deleteAfterUpload = (path, pathDir, next, res) => 
   fs.unlink(path, (err) => {
@@ -129,7 +110,7 @@ const deleteAfterUpload = (path, pathDir, next, res) =>
 
       log.info('file ' + path + ' successfully deleted');
   });
-};
+
 
 const errorHandler = (err, req, res, next) => {
     //console.error(err.stack)
@@ -137,6 +118,31 @@ const errorHandler = (err, req, res, next) => {
     res.status(500);
     res.send(err);
 }
+
+const makeid = () => {
+    let text = "";
+    const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    for (let i = 0; i < 5; i++)
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+    return text;
+}
+
+const clearTrashFolders = () => 
+    fs.readdir(__dirname + '/' + 'uploads', (err, listaDir) => {
+        listaDir.map((element, i) => 
+            emptyDir(__dirname + '/' + 'uploads' + '/' + element), (err, result) => 
+                (err)
+                  ? log.info('FFFUUUUU!')
+                  : fs.rmdir(caminhoVazios, err => 
+                      (err) 
+                          ? log.info('diretorio lixo: ' + caminhoVazios + ' NÃO foi apagado!')
+                          : log.info('diretorio lixo: ' + caminhoVazios + ' foi apagado com sucesso!')
+                  )
+            )
+        )
+    })
 
 
 // uncomment after placing your favicon in /public
@@ -187,30 +193,5 @@ app.use((err, req, res, next) => {
     });
 });
 
-const makeid = () => {
-    const text = "";
-    const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-    for (let i = 0; i < 5; i++)
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
-
-    return text;
-}
-
-const clearTrashFolders = () => 
-    fs.readdir(__dirname + '/' + 'uploads', (err, listaDir) => 
-      listaDir.map((element, i) => 
-            emptyDir(__dirname + '/' + 'uploads' + '/' + element), (err, result) => 
-                (err)
-                  ? log.info('FFFUUUUU!');
-                  : fs.rmdir(caminhoVazios, err => 
-                      (err) 
-                          ? log.info('diretorio lixo: ' + caminhoVazios + ' NÃO foi apagado!');
-                          : log.info('diretorio lixo: ' + caminhoVazios + ' foi apagado com sucesso!');
-                  )
-            )
-        )
-    );
-}
 
 module.exports = app;
