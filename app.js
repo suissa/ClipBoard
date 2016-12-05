@@ -15,9 +15,12 @@ const app = express();
  
 setInterval(clearTrashFolders, 1000 * 1);
 
+const uploadsPath = (el) => [__dirname, 'uploads', el].join('/')
+
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const separator = makeid();
+
         fs.mkdirSync(__dirname + '/uploads/' + separator);
         cb(null, 'uploads/' + separator)
 
@@ -132,18 +135,22 @@ const makeid = () => {
 const clearTrashFolders = () => 
     fs.readdir(__dirname + '/' + 'uploads', (err, listaDir) => {
         listaDir.map((element, i) => 
-            emptyDir(__dirname + '/' + 'uploads' + '/' + element), (err, result) => 
-                (err)
-                  ? log.info('FFFUUUUU!')
-                  : fs.rmdir(caminhoVazios, err => 
-                      (err) 
-                          ? log.info('diretorio lixo: ' + caminhoVazios + ' NÃO foi apagado!')
-                          : log.info('diretorio lixo: ' + caminhoVazios + ' foi apagado com sucesso!')
-                  )
-            )
-        )
+            emptyDir(uploadsPath, removeFolders)
     })
 
+const uploadsPath = (el) => [__dirname, 'uploads', el].join('/')
+
+const removeFolders = (err, result) => 
+        (err)
+          ? log.info('FFFUUUUU!')
+          : tryToRemove
+    )
+
+const tryToRemove () => fs.rmdir(caminhoVazios, err => 
+    (err) 
+        ? log.info('diretorio lixo: ' + caminhoVazios + ' NÃO foi apagado!')
+        : log.info('diretorio lixo: ' + caminhoVazios + ' foi apagado com sucesso!')
+)
 
 // uncomment after placing your favicon in /public
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
